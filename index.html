@@ -53,6 +53,10 @@
         #reportList {
             margin-top: 20px;
         }
+        .photo-preview img {
+            width: 100px;
+            margin: 5px;
+        }
     </style>
 </head>
 <body>
@@ -77,9 +81,10 @@
             <label for="description">Descrição do Instrumento:</label>
             <textarea id="description" required></textarea>
             
-            <label for="photo">Foto do Serviço Executado:</label>
-            <input type="file" id="photo" accept="image/*">
+            <label for="photo">Fotos do Serviço Executado:</label>
+            <input type="file" id="photo" accept="image/*" multiple>
             <button type="button" onclick="capturePhoto()">Tirar Foto</button>
+            <div id="photoPreview" class="photo-preview"></div>
             
             <button type="submit">Salvar Relatório</button>
         </form>
@@ -93,6 +98,20 @@
             photoInput.click();
         }
 
+        document.getElementById("photo").addEventListener("change", function() {
+            const preview = document.getElementById("photoPreview");
+            preview.innerHTML = "";
+            for (let file of this.files) {
+                let reader = new FileReader();
+                reader.onload = function(e) {
+                    let img = document.createElement("img");
+                    img.src = e.target.result;
+                    preview.appendChild(img);
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
         document.getElementById("reportForm").addEventListener("submit", function(event) {
             event.preventDefault();
             
@@ -102,21 +121,27 @@
             const registration = document.getElementById("registration").value;
             const code = document.getElementById("code").value;
             const description = document.getElementById("description").value;
-            const photo = document.getElementById("photo").files[0];
+            const photoFiles = document.getElementById("photo").files;
             
-            let reader = new FileReader();
-            reader.onload = function(e) {
+            let photos = [];
+            let readers = [];
+            for (let file of photoFiles) {
+                let reader = new FileReader();
+                readers.push(new Promise(resolve => {
+                    reader.onload = function(e) {
+                        photos.push(e.target.result);
+                        resolve();
+                    };
+                    reader.readAsDataURL(file);
+                }));
+            }
+            
+            Promise.all(readers).then(() => {
                 const reportData = {
-                    date, company, technician, registration, code, description, photo: e.target.result
+                    date, company, technician, registration, code, description, photos
                 };
                 saveReport(reportData);
-            };
-            if (photo) {
-                reader.readAsDataURL(photo);
-            } else {
-                const reportData = { date, company, technician, registration, code, description, photo: "" };
-                saveReport(reportData);
-            }
+            });
         });
         
         function saveReport(report) {
@@ -132,6 +157,7 @@
             reportList.innerHTML = "";
             reports.forEach((report, index) => {
                 let reportItem = document.createElement("div");
+                let photosHtml = report.photos.map(photo => `<img src="${photo}" width="100">`).join(" ");
                 reportItem.innerHTML = `
                     <div style="border-bottom: 1px solid #ccc; padding: 10px;">
                         <p><strong>Data:</strong> ${report.date}</p>
@@ -140,7 +166,7 @@
                         <p><strong>Registro:</strong> ${report.registration}</p>
                         <p><strong>Código:</strong> ${report.code}</p>
                         <p><strong>Descrição:</strong> ${report.description}</p>
-                        ${report.photo ? `<img src="${report.photo}" width="100">` : ""}
+                        <div>${photosHtml}</div>
                         <button onclick="deleteReport(${index})">Excluir</button>
                     </div>
                 `;
