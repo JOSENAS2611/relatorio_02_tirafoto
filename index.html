@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro de Relatórios</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            width: 300px;
+        }
+        h2 {
+            text-align: center;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+        }
+        label {
+            margin-top: 10px;
+        }
+        input, textarea {
+            padding: 8px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            margin-top: 15px;
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 10px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        button:hover {
+            background: #218838;
+        }
+        #reportList {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Registro de Relatórios</h2>
+        <form id="reportForm">
+            <label for="date">Data:</label>
+            <input type="date" id="date" required>
+            
+            <label for="company">Nome da Empresa:</label>
+            <input type="text" id="company" required>
+            
+            <label for="technician">Nome do Técnico:</label>
+            <input type="text" id="technician" required>
+            
+            <label for="registration">Registro do Técnico:</label>
+            <input type="text" id="registration" required>
+            
+            <label for="code">Código:</label>
+            <input type="text" id="code" required>
+            
+            <label for="description">Descrição do Instrumento:</label>
+            <textarea id="description" required></textarea>
+            
+            <label for="photo">Foto do Serviço Executado:</label>
+            <input type="file" id="photo" accept="image/*">
+            <button type="button" onclick="capturePhoto()">Tirar Foto</button>
+            
+            <button type="submit">Salvar Relatório</button>
+        </form>
+        <div id="reportList"></div>
+    </div>
+    
+    <script>
+        function capturePhoto() {
+            const photoInput = document.getElementById("photo");
+            photoInput.setAttribute("capture", "environment");
+            photoInput.click();
+        }
+
+        document.getElementById("reportForm").addEventListener("submit", function(event) {
+            event.preventDefault();
+            
+            const date = document.getElementById("date").value;
+            const company = document.getElementById("company").value;
+            const technician = document.getElementById("technician").value;
+            const registration = document.getElementById("registration").value;
+            const code = document.getElementById("code").value;
+            const description = document.getElementById("description").value;
+            const photo = document.getElementById("photo").files[0];
+            
+            let reader = new FileReader();
+            reader.onload = function(e) {
+                const reportData = {
+                    date, company, technician, registration, code, description, photo: e.target.result
+                };
+                saveReport(reportData);
+            };
+            if (photo) {
+                reader.readAsDataURL(photo);
+            } else {
+                const reportData = { date, company, technician, registration, code, description, photo: "" };
+                saveReport(reportData);
+            }
+        });
+        
+        function saveReport(report) {
+            let reports = JSON.parse(localStorage.getItem("reports")) || [];
+            reports.push(report);
+            localStorage.setItem("reports", JSON.stringify(reports));
+            displayReports();
+        }
+        
+        function displayReports() {
+            let reports = JSON.parse(localStorage.getItem("reports")) || [];
+            let reportList = document.getElementById("reportList");
+            reportList.innerHTML = "";
+            reports.forEach((report, index) => {
+                let reportItem = document.createElement("div");
+                reportItem.innerHTML = `
+                    <div style="border-bottom: 1px solid #ccc; padding: 10px;">
+                        <p><strong>Data:</strong> ${report.date}</p>
+                        <p><strong>Empresa:</strong> ${report.company}</p>
+                        <p><strong>Técnico:</strong> ${report.technician}</p>
+                        <p><strong>Registro:</strong> ${report.registration}</p>
+                        <p><strong>Código:</strong> ${report.code}</p>
+                        <p><strong>Descrição:</strong> ${report.description}</p>
+                        ${report.photo ? `<img src="${report.photo}" width="100">` : ""}
+                        <button onclick="deleteReport(${index})">Excluir</button>
+                    </div>
+                `;
+                reportList.appendChild(reportItem);
+            });
+        }
+        
+        function deleteReport(index) {
+            let reports = JSON.parse(localStorage.getItem("reports")) || [];
+            reports.splice(index, 1);
+            localStorage.setItem("reports", JSON.stringify(reports));
+            displayReports();
+        }
+        
+        window.onload = displayReports;
+    </script>
+</body>
+</html>
