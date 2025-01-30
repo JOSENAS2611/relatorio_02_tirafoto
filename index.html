@@ -92,6 +92,8 @@
     </div>
     
     <script>
+        let photoList = [];
+
         function capturePhoto() {
             const photoInput = document.getElementById("photo");
             photoInput.setAttribute("capture", "environment");
@@ -100,13 +102,13 @@
 
         document.getElementById("photo").addEventListener("change", function() {
             const preview = document.getElementById("photoPreview");
-            preview.innerHTML = "";
             for (let file of this.files) {
                 let reader = new FileReader();
                 reader.onload = function(e) {
                     let img = document.createElement("img");
                     img.src = e.target.result;
                     preview.appendChild(img);
+                    photoList.push(e.target.result);
                 };
                 reader.readAsDataURL(file);
             }
@@ -121,27 +123,13 @@
             const registration = document.getElementById("registration").value;
             const code = document.getElementById("code").value;
             const description = document.getElementById("description").value;
-            const photoFiles = document.getElementById("photo").files;
             
-            let photos = [];
-            let readers = [];
-            for (let file of photoFiles) {
-                let reader = new FileReader();
-                readers.push(new Promise(resolve => {
-                    reader.onload = function(e) {
-                        photos.push(e.target.result);
-                        resolve();
-                    };
-                    reader.readAsDataURL(file);
-                }));
-            }
-            
-            Promise.all(readers).then(() => {
-                const reportData = {
-                    date, company, technician, registration, code, description, photos
-                };
-                saveReport(reportData);
-            });
+            const reportData = {
+                date, company, technician, registration, code, description, photos: [...photoList]
+            };
+            saveReport(reportData);
+            photoList = [];
+            document.getElementById("photoPreview").innerHTML = "";
         });
         
         function saveReport(report) {
